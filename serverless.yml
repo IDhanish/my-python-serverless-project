@@ -1,0 +1,34 @@
+service: my-python-service
+provider:
+  name: aws
+  runtime: python3.8
+  stage: dev
+  region: ap-south-1
+functions:
+  function1:
+    handler: functions/function1/handler.handler
+    events:
+      - http:
+          path: function1
+          method: GET
+      - http:
+          path: function1
+          method: POST
+  function2:
+    handler: functions/function2/handler.handler
+    events:
+      - http:
+          path: function2
+          method: GET
+      - http:
+          path: function2
+          method: POST
+  function3:
+    handler: functions/function3/handler.handler
+    events:
+      - http:
+          path: function3
+          method: GET
+      - http:
+          path: function3
+          method: POST
