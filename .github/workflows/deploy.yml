@@ -8,12 +8,17 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v1
-    - uses: maximilianobz/actions-samdeploy@v1.0.4
-      env:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Deploy to AWS
+      uses: maximilianobz/actions-samdeploy@v1.0.4
+      with:
         AWS_REGION: 'ap-south-1'
-        AWS_ACCESS_KEY_ID: ${{secrets.AWS_ACCESS_KEY_ID}}
-        AWS_SECRET_ACCESS_KEY: ${{secrets.AWS_SECRET_ACCESS_KEY}}
-    - name: deploy service
-      run: $SAM_ENV=main sam deploy --config-env $SAM_ENV
-   
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+    - name: Deploy service
+      run: |
+        SAM_ENV=main
+        sam deploy --config-env $SAM_ENV
