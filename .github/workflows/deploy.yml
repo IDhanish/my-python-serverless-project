@@ -2,7 +2,7 @@ name: Serverless Backend-API-Deployment
 on:
   push:
     branches:
-      - labcicd
+      - main
 jobs:
   deploy:
     runs-on: ubuntu-latest
