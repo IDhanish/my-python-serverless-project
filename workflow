@@ -1,0 +1,465 @@
+name: CICD Pipeline for CSI Application
+
+on:
+  push:
+    branches:
+      - labcicd
+      - dev
+      - main
+      - csi-tests
+      # Add more branches as needed
+
+jobs:
+###############################################################CI-RUN Linting stage start###################################################################################################
+  lint-test:
+    runs-on: ubuntu-latest
+    name: CI-Run Linting Tests 
+    environment: Lab
+    steps:      
+      - name: Notify by email (Job Triggered) # Notify by Email when the Job is Triggered 
+        uses: cinotify/github-action@main
+        with:
+          to: 'sandesh.kandaswamy@ust.com'
+          subject: 'GitHub Actions Workflow Triggered'
+          body: 'The CI/CD workflow for CSI application has been triggered.'
+          
+      - uses: actions/checkout@v3   # Checks out the repository code
+      
+      - name: Cache npm dependencies
+        uses: actions/cache@v2
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
+            
+      - uses: actions/setup-node@v3  # Sets up Node.js environment with specified version
+        with:
+          node-version: '14.x'
+      - run: |
+         npm ci 
+         npm install karma-sonarqube-reporter --save-dev
+         npm run lint > lint-log.txt
+        continue-on-error: true
+        
+      - name: Save logs as artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: linting-logs
+          path: |
+            lint-log.txt
+      - name: Check for lint errors
+        run: |
+           if grep -q "All files pass linting." lint-log.txt; then
+            echo "No lint errors found."
+           else
+            echo "Lint errors found. Failing the job."
+            exit 1
+           fi
+  notification-lint-success:
+    runs-on: ubuntu-latest
+    needs: lint-test
+    if: ${{ needs.lint-test.result == 'success' }}
+    steps:
+      - name: Download logs artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: linting-logs
+      - name: Notify by email (Linting Success)
+        uses: cinotify/github-action@main
+        with:
+          to: 'sandesh.kandaswamy@ust.com'
+          subject: 'Linting stage passed'
+          body: 'Linting stage in CI/CD workflow for CSI application is Passed PFA logs.'
+          attachment: lint-log.txt
+
+  notification-lint-failure:
+    runs-on: ubuntu-latest
+    needs: lint-test
+    if: ${{ always() && contains(needs.lint-test.result, 'failure')}}
+    steps:
+      - name: Download logs artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: linting-logs
+      - name: Notify by email (Linting Failure)
+        uses: cinotify/github-action@main
+        with:
+          to: 'sandesh.kandaswamy@ust.com'
+          subject: 'Linting Stage Failed'
+          body: 'Linting stage in CI/CD workflow for CSI application is Failed PFA logs.'
+          attachment: lint-log.txt
+###############################################################CI-RUN Linting stage END###################################################################################################
+
+###############################################################CI-RUN Unit Testing stage Start############################################################################################
+  unit-test:
+    runs-on: ubuntu-latest
+    name: CI-Run  Unit Tests 
+    needs: lint-test
+    environment: Lab
+    steps:
+      - uses: actions/checkout@v3
+      - name: Cache npm dependencies
+        uses: actions/cache@v2
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
+            
+      - uses: actions/setup-node@v3    #Sets up Node.js environment with specified version
+        with:
+          node-version: '14.x'
+      - run: |
+         npm ci
+         npm install karma-sonarqube-reporter --save-dev
+         npm test > Unit_test-log.txt
+        continue-on-error: true          
+      - name: Save logs as artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: Unit_test-logs
+          path: |
+            Unit_test-log.txt
+      - name: Check for unit test failures
+        run: |
+           if grep -q "failed" Unit_test-log.txt; then
+            echo "Unit test failures found. Failing the job."
+            exit 1
+           else
+            echo "Unit test passed."
+           fi
+           
+  notification-unittest-success:
+    runs-on: ubuntu-latest
+    needs: unit-test
+    if: ${{ needs.unit-test.result == 'success' }}
+    steps:
+      - name: Download logs artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: Unit_test-logs
+      - name: Notify by email (Unit Test Success)
+        uses: cinotify/github-action@main
+        with:
+          to: 'sandesh.kandaswamy@ust.com'
+          subject: 'Unit tests passed'
+          body: 'The Unit stage in CI/CD workflow for CSI application is Passed PFA logs.'
+          attachment: Unit_test-log.txt
+
+  notification-unittest-failure:
+    runs-on: ubuntu-latest
+
+    needs: unit-test
+    if: ${{ always() && contains(needs.unit-test.result, 'failure')}}
+    steps:
+      - name: Download logs artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: Unit_test-logs
+      - name: Notify by email (Unit Tests Failure)
+        uses: cinotify/github-action@main
+        with:
+          to: 'sandesh.kandaswamy@ust.com'
+          subject: 'Unit tests Failed'
+          body: 'The Unit  stage in CI/CD workflow for CSI application is Failed PFA logs.'
+          attachment: Unit_test-log.txt
+###############################################################CI-RUN Unit Testing stage END############################################################################################
+
+###############################################################CI-RUN Unit Sonarqube stage Start########################################################################################
+          
+  sonarqube:
+    runs-on: ubuntu-latest
+    name: CI-Run Sonarqube 
+    needs: unit-test
+    environment: Lab
+    steps:
+      - uses: actions/checkout@v3  
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '14.x'
+      - run: |
+         npm ci
+         npm install karma-sonarqube-reporter --save-dev
+         npm test
+        continue-on-error: true
+        
+      - name: Copy lcov.info and sonarqube_report.xml to Base Directory
+        run: |
+          cp /home/runner/work/center-store-inventory/center-store-inventory/coverage/csi/lcov.info $GITHUB_WORKSPACE
+          cp /home/runner/work/center-store-inventory/center-store-inventory/reports/sonarqube_report.xml $GITHUB_WORKSPACE
+          
+      - name: sonarqube scanning
+        uses: sonarsource/sonarqube-scan-action@master
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: http://13.57.90.72:9000
+          
+      - name: SonarQube Quality Gate check
+        id: sonarqube-quality-gate-check
+        uses: sonarsource/sonarqube-quality-gate-action@master
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: http://13.57.90.72:9000
+        continue-on-error: true  #Processing the job for further execution even though its failed( remove this parameter once the sonarqube issues are fixed)
+          
+      - name: Example show SonarQube Quality Gate Status value
+        run: echo "The Quality Gate status is ${{ steps.sonarqube-quality-gate-check.outputs.quality-gate-status }}"
+        
+  notification-sonarqube-success:
+    runs-on: ubuntu-latest
+    needs: sonarqube
+    if: ${{ needs.id.result == 'success' }} #replace id by sonarqube for job execution
+    steps:
+      - name: Notify by email (Sonarqube Quality Gate status)
+        uses: cinotify/github-action@main
+        with:
+          to: 'sandesh.kandaswamy@ust.com'
+          subject: 'Sonarqube Quality Gate status passed'
+          body: 'The Sonarqube Quality Gate status has been passed w.r.t code coverage, unit tests other scenarios, Please review the dashboard for more details.'
+          
+  notification-sonarqube-failure:
+    runs-on: ubuntu-latest
+    needs: sonarqube
+    if: ${{ always() && contains(needs.id.result, 'failure')}} #replace id by sonarqube for job execution
+    steps:
+      - name: Notify by email (Sonarqube Quality Gate status)
+        uses: cinotify/github-action@main
+        with:
+          to: 'sandesh.kandaswamy@ust.com'
+          subject: 'Sonarqube Quality Gate status failed'
+          body: 'The Sonarqube Quality Gate status has been failed and does not met the passing % of code coverage,unit tests and other scenarios, Please review the dashboard for more details.'
+          
+ ###############################################################CI-RUN Unit Sonarqube stage END########################################################################################  
+
+  ###############################################################CD-Build and deploy stage Start########################################################################################  
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: sonarqube
+    environment: Lab
+    name: CD-Build and deploy
+    steps:
+     - uses: actions/checkout@v3
+     - name: Cache npm dependencies
+       uses: actions/cache@v2
+       with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
+     - uses: actions/setup-node@v3
+       with:
+        node-version: '14.x' 
+     - run: npm ci
+     - name: Build Angular app
+       run: npm run build --output-hashing=all > build-log.txt # Adjust if you use a different build command
+       continue-on-error: true
+
+     - name: Save logs as artifact
+       uses: actions/upload-artifact@v2
+       with:
+         name: build-logs
+         path: build-log.txt
+         
+     - name: Check for build failure
+       run: |
+          if grep -q "bundle generation complete." build-log.txt; then
+           echo "Build Success."
+          else
+           echo "Build Failure. Failing the job."
+           exit 1
+          fi
+         
+     - name: Deleting unwanted files from the deployment directory
+       run: |
+          ls -lrt /home/runner/work/center-store-inventory/center-store-inventory/
+          cd /home/runner/work/center-store-inventory/center-store-inventory/
+          shopt -s extglob
+          rm -r !(app.yaml|www)
+          # Files required for deploymnet
+          ls -lrt /home/runner/work/center-store-inventory/center-store-inventory/
+          
+     # Authenticate to Google Cloud using provided credentials
+     - id: 'auth'
+       name: 'Authenticate to Google Cloud'
+       uses: 'google-github-actions/auth@v1'
+       with:
+        credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+
+     - name: 'Set up Cloud SDK'
+       uses: 'google-github-actions/setup-gcloud@v1'
+       with:
+        version: '>= 363.0.0'
+
+     - name: Upload artifacts to GCS bucket
+       uses: google-github-actions/upload-cloud-storage@v1
+       with:
+        credentials: ${{ secrets.GCP_CREDENTIALS }}  # Create a secret with your GCP service account key
+        path: 'www/'  # Path to your built Angular app
+        destination: 'csilab-buckets'
+
+     - name: Configuring deploy version
+       id: configure-version
+       run: |
+        # Retrieve the current version of the Google App Engine service
+        current_version=$(gcloud app versions list --filter="service:default" --sort-by=VERSION.DESCENDING --format="value(VERSION.ID)" | tail -n 1)
+        echo "Present version: $current_version"
+        # Remove the 'v' prefix from the version number
+        numeric_version=$(echo $current_version | sed 's/v//')
+        # Calculate the new version by incrementing the numeric version
+        new_numeric_version=$((numeric_version + 1))
+        new_version="v$new_numeric_version"
+        echo "New version: $new_version"
+        # Set output variables for later use
+        echo "::set-output name=new_version::${new_version}"
+        echo "::set-output name=current_version::${current_version}"
+        echo "::set-output name=numeric_version::${numeric_version}"
+              
+     # Deploy the application to Google App Engine
+     - id: 'deploy'
+       uses: 'google-github-actions/deploy-appengine@v1'
+       with:
+          version: ${{ steps.configure-version.outputs.new_version }}
+       continue-on-error: true
+       
+     - name: Check deployment status and roll back if incase of failure
+       run: |
+             if [[ ${{ steps.deploy.outcome  }} != "success" ]]; then
+             echo "Deployment failed. Rolling back to previous version."
+             gcloud app services set-traffic  --splits ${{ steps.configure-version.outputs.current_version }}=1
+             else
+             echo "Deployment successful."
+             fi
+             
+     - name: Launch and test the deployed Application
+       run: |
+        if [[ ${{ steps.deploy.outcome  }} = "success" ]]; then
+          # Perform a curl request to the deployed application
+          curl "${{ steps.deploy.outputs.url }}"
+        else
+          run: |
+            # if deployment is not successful, Below rollback url will be used(Which is the existing code version)
+          curl "https://v${{ steps.configure-version.outputs.numeric_version }}-dot-center-store-inventory-lab.appspot.com/"
+        fi
+     - name: Find the Version that has been deployed
+       run: |   
+          VERSION=$(gcloud app versions list --filter="service:default" --sort-by=VERSION.DESCENDING --format="value(VERSION.ID)" | tail -n 1)
+          # Retrieve the deployed version and deployment status
+          echo "The code has been successfully deployed, and its current version is  $VERSION"
+  build-deploy-notification-success:
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: ${{ needs.deploy.result == 'success' }}
+    steps:
+      - name: Download logs artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: build-logs
+      - name: Notify by email (Build Success)
+        uses: cinotify/github-action@main
+        with:
+          to: 'sandesh.kandaswamy@ust.com'
+          subject: 'GitHub Actions Build Successful'
+          body: 'The CI/CD build for CSI Application completed successfully.'
+          attachment: build-log.txt
+
+  build-deploy-notification-failure:
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: ${{ always() && contains(needs.deploy.result, 'failure')}}
+    steps:
+      - name: Download logs artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: build-logs
+      - name: Notify by email (Build Failure)
+        uses: cinotify/github-action@main
+        with:
+          to: 'sandesh.kandaswamy@ust.com'
+          subject: 'GitHub Actions Build Failed'
+          body: 'The CI/CD build for CSI Application failed. Please check the build logs for details.'
+          attachment: build-log.txt
+   ###############################################################CD-Build and deploy stage END########################################################################################
+
+###############################################################Test-Automation and deploy stage Start########################################################################################
+
+  Test-Automation:
+    runs-on: windows-latest
+    needs: deploy
+    name: Basic Test case Execution
+    steps:
+      # Set up SSH agent for accessing a private offers-integration-tests repository
+      - name: Set up SSH agent
+        uses: webfactory/ssh-agent@v0.7.0
+        with:
+          ssh-private-key: ${{secrets.PRIVATE_SSH_KEY_OFFERS_REPO}}
+      
+      - name: Clone the other repository
+        run: |
+          git clone git@github.com:savemart-itapps/offers-integration-tests.git -b csi-tests
+      - name: Set up JDK
+        uses: actions/setup-java@v2
+        with:
+          java-version: '8'
+          distribution: 'adopt'# Set up the Java version you want to use
+
+      - name: Build and Test with Maven
+        run: |
+          $env:CSI_URL = "https://center-store-inventory-lab.uw.r.appspot.com"   # Application URL
+          # Replace Application URL in Test config properties
+          (Get-Content \a\center-store-inventory\center-store-inventory\offers-integration-tests\TAF-Scripting\src\main\resources\DataFiles\Properties\config.properties) -replace 'CSI_URL=.*', "CSI_URL=$env:CSI_URL" | Set-Content \a\center-store-inventory\center-store-inventory\offers-integration-tests\TAF-Scripting\src\main\resources\DataFiles\Properties\config.properties
+          Get-Content \a\center-store-inventory\center-store-inventory\offers-integration-tests\TAF-Scripting\src\main\resources\DataFiles\Properties\config.properties | Select-String 'CSI_URL'
+          cd offers-integration-tests
+          mvn clean test
+  
+      - name: Get test results from surefire-reports
+        id: test-results
+        run: |
+         $failures = (Get-Content -Path \a\center-store-inventory\center-store-inventory\offers-integration-tests\TAF-Scripting\target\surefire-reports\*.txt | Select-String "Tests run:.*Failures: (\d+)" | ForEach-Object { $_.Matches.Groups[1].Value } | Measure-Object -Sum).Sum
+         echo "Test failures: $failures"
+         echo "::set-output name=failures::$failures"
+      - name: Save logs as artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: Test-reports
+          path: \a\center-store-inventory\center-store-inventory\offers-integration-tests\TAF-Scripting\target\surefire-reports\emailable-report.html
+  
+      - name: Fail job on test failures
+        if: ${{ steps.test-results.outputs.failures > 0 }}
+        run: exit 1
+
+  notification-test-automation-success:
+    runs-on: ubuntu-latest
+    needs: Test-Automation
+    if: ${{ needs.Test-Automation.result == 'success' }}
+    steps:
+      - name: Download logs artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: Test-reports
+      - name: Notify by email (Test-Automation Success)
+        uses: cinotify/github-action@main
+        with:
+          to: 'sandesh.kandaswamy@ust.com'
+          subject: 'Passed Test-Automation Stage'
+          body: 'The Test-Automation stage in CI/CD workflow for CSI application is Passed.'
+          attachment: emailable-report.html
+  
+  notification-test-automation-failure:
+    runs-on: ubuntu-latest
+    needs: Test-Automation
+    if: ${{ always() && contains(needs.Test-Automation.result, 'failure')}}
+    steps:
+      - name: Download logs artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: Test-reports
+      - name: Notify by email (Test-Automation Failure)
+        uses: cinotify/github-action@main
+        with:
+          to: 'sandesh.kandaswamy@ust.com'
+          subject: 'Test-Automation Stage Failed'
+          body: 'The Test-Automation stage in CI/CD workflow for CSI application is Failed.'
+          attachment: emailable-report.html
+###############################################################Test-Automation and deploy stage END########################################################################################
