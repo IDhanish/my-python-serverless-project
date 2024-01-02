@@ -19,7 +19,7 @@ jobs:
       - name: Notify by email (Job Triggered) # Notify by Email when the Job is Triggered 
         uses: cinotify/github-action@main
         with:
-          to: 'sandesh.kandaswamy@ust.com'
+          to: 'stakeholder’s email id'
           subject: 'GitHub Actions Workflow Triggered'
           body: 'The CI/CD workflow for CSI application has been triggered.'
           
