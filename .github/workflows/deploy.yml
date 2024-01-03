@@ -408,7 +408,8 @@ jobs:
         run: |
           $env:CSI_URL = "https://center-store-inventory-lab.uw.r.appspot.com"   # Application URL
           # Replace Application URL in Test config properties
-          (Get-Content \a\center-store-inventory\center-store-inventory\offers-integration-tests\TAF-Scripting\src\main\resources\DataFiles\Properties\config.properties) -replace 'CSI_URL=.*', "CSI_URL=$env:CSI_URL" | Set-Content \a\center-store-inventory\center-store-inventory\offers-integration-tests\TAF-Scripting\src\main\resources\DataFiles\Properties\config.properties
+          (Get-Content \a\center-store-inventory\center-store-inventory\offers-integration-tests\TAF-Scripting\src\main\resources\DataFiles\Properties\config.properties) -replace 'CSI_URL=.*',
+          "CSI_URL=$env:CSI_URL" | Set-Content \a\center-store-inventory\center-store-inventory\offers-integration-tests\TAF-Scripting\src\main\resources\DataFiles\Properties\config.properties
           Get-Content \a\center-store-inventory\center-store-inventory\offers-integration-tests\TAF-Scripting\src\main\resources\DataFiles\Properties\config.properties | Select-String 'CSI_URL'
           cd offers-integration-tests
           mvn clean test
