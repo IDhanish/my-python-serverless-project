@@ -417,7 +417,8 @@ jobs:
       - name: Get test results from surefire-reports
         id: test-results
         run: |
-         $failures = (Get-Content -Path \a\center-store-inventory\center-store-inventory\offers-integration-tests\TAF-Scripting\target\surefire-reports\*.txt | Select-String "Tests run:.*Failures: (\d+)" | ForEach-Object { $_.Matches.Groups[1].Value } | Measure-Object -Sum).Sum
+         $failures = (Get-Content -Path \a\center-store-inventory\center-store-inventory\offers-integration-tests\TAF-Scripting\target\surefire-reports\*.txt 
+         | Select-String "Tests run:.*Failures: (\d+)" | ForEach-Object { $_.Matches.Groups[1].Value } | Measure-Object -Sum).Sum
          echo "Test failures: $failures"
          echo "::set-output name=failures::$failures"
       - name: Save logs as artifact
