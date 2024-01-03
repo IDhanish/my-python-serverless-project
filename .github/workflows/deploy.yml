@@ -209,7 +209,7 @@ jobs:
   notification-sonarqube-success:
     runs-on: ubuntu-latest
     needs: sonarqube
-    if: ${{ needs.id.result == 'success' }} #replace id by sonarqube for job execution
+    if: ${{ needs.sonarqube.result == 'success' }} #replace id by sonarqube for job execution
     steps:
       - name: Notify by email (Sonarqube Quality Gate status)
         uses: cinotify/github-action@main
@@ -221,7 +221,7 @@ jobs:
   notification-sonarqube-failure:
     runs-on: ubuntu-latest
     needs: sonarqube
-    if: ${{ always() && contains(needs.id.result, 'failure')}} #replace id by sonarqube for job execution
+    if: ${{ always() && contains(needs.sonarqube.result, 'failure')}} #replace id by sonarqube for job execution
     steps:
       - name: Notify by email (Sonarqube Quality Gate status)
         uses: cinotify/github-action@main
