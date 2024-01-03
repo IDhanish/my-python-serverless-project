@@ -467,3 +467,126 @@ jobs:
 ###############################################################Test-Automation and deploy stage END########################################################################################
 
 
+
+
+
+
+name: CICD Pipeline for New Project
+on:
+  push:
+    branches:
+      - feature
+      - development
+      - main
+      # Add more branches as needed based on the project's branching strategy
+jobs:
+
+
+
+
+
+
+# Steps to be executed in the 'lint-test' job
+    steps:
+      # Notify by Email when the Job is Triggered 
+      - name: Notify by email (Job Triggered)
+        # Use the GitHub Action for sending notifications
+        uses: cinotify/github-action@main
+        # Customize the email recipient, subject, and body based on project preferences
+        with:
+          to: 'recipient@example.com'  # Update with the relevant email address
+          subject: 'GitHub Actions Workflow Triggered'
+          body: 'The CI/CD workflow for the project has been triggered. Please review the changes.'
+
+
+
+
+
+
+
+# Save logs as artifact
+      - name: Save Logs as Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: project-logs  # Name for the artifact
+          path: |
+            logs/  # Path to the logs directory
+
+
+
+
+# Download logs artifact
+      - name: Download Logs Artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: project-logs  # Adjust based on the name used during artifact saving
+
+
+
+
+# Notify by email on success of a stage
+      - name: Notify by email (Stage Success)
+        uses: cinotify/github-action@main
+        with:
+          to: 'stakeholders-email@example.com'  # Adjust the email recipient
+          subject: 'Stage passed'
+          body: 'The CI/CD workflow stage has passed. Please find attached logs.'
+          attachment: logs.txt  # Adjust the attachment name based on the actual log file name
+
+
+
+# SonarQube scanning step
+      - name: SonarQube scanning
+        uses: sonarsource/sonarqube-scan-action@master
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}  # Replace SONAR_TOKEN with the actual secret name
+          SONAR_HOST_URL: http://sonarqube-server:9000  # Replace sonarqube-server with the actual URL of the SonarQube server
+
+
+
+# Authenticate to Google Cloud step
+      - id: 'auth'
+        name: 'Authenticate to Google Cloud'
+        uses: 'google-github-actions/auth@v1'
+        with:
+          credentials_json: '${{ secrets.GCP_CREDENTIALS }}'  # Replace GCP_CREDENTIALS with the actual secret name
+
+
+
+# Set up Cloud SDK step
+      - name: 'Set up Cloud SDK'
+        uses: 'google-github-actions/setup-gcloud@v1'
+        with:
+          version: '>= DESIRED_VERSION'  # Replace DESIRED_VERSION with the actual version number needed
+
+
+# Upload artifacts to GCS bucket step
+- name: Upload artifacts to GCS bucket
+  uses: google-github-actions/upload-cloud-storage@v1
+  with:
+    credentials: ${{ secrets.GCP_CREDENTIALS_SECRET }}  # Replace GCP_CREDENTIALS_SECRET with the name of the secret containing GCP credentials
+    path: 'PATH_TO_ARTIFACTS'  # Replace PATH_TO_ARTIFACTS with the path to the artifacts in the workflow
+    destination: 'GCS_BUCKET_NAME'  # Replace GCS_BUCKET_NAME with the name of the GCS bucket
+
+
+
+  # Step to clone another repository
+  - name: Clone the other repository
+    run: |
+      # Replace 'username' with the GitHub username and 'repo' with the repository want to clone.
+      git clone git@github.com:savemart-itapps/offers-integration-tests.git -b csi-tests
+
+
+
+
+
+# Step to set up JDK
+  - name: Set up JDK
+    uses: actions/setup-java@v2
+    with:
+      # Specify the desired Java version (e.g., '8', '11', '16', etc.)
+      java-version: '8'
+      # Choose the distribution of Java (e.g., 'adopt', 'openjdk', etc.)
+      distribution: 'adopt'
+
+
