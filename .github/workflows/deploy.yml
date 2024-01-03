@@ -68,7 +68,7 @@ jobs:
       - name: Notify by email (Linting Success)
         uses: cinotify/github-action@main
         with:
-          to: 'sandesh.kandaswamy@ust.com'
+          to: 'stakeholder’s email id'
           subject: 'Linting stage passed'
           body: 'Linting stage in CI/CD workflow for CSI application is Passed PFA logs.'
           attachment: lint-log.txt
@@ -85,7 +85,7 @@ jobs:
       - name: Notify by email (Linting Failure)
         uses: cinotify/github-action@main
         with:
-          to: 'sandesh.kandaswamy@ust.com'
+          to: 'stakeholder’s email id'
           subject: 'Linting Stage Failed'
           body: 'Linting stage in CI/CD workflow for CSI application is Failed PFA logs.'
           attachment: lint-log.txt
@@ -142,7 +142,7 @@ jobs:
       - name: Notify by email (Unit Test Success)
         uses: cinotify/github-action@main
         with:
-          to: 'sandesh.kandaswamy@ust.com'
+          to: 'stakeholder’s email id'
           subject: 'Unit tests passed'
           body: 'The Unit stage in CI/CD workflow for CSI application is Passed PFA logs.'
           attachment: Unit_test-log.txt
@@ -160,7 +160,7 @@ jobs:
       - name: Notify by email (Unit Tests Failure)
         uses: cinotify/github-action@main
         with:
-          to: 'sandesh.kandaswamy@ust.com'
+          to: 'stakeholder’s email id'
           subject: 'Unit tests Failed'
           body: 'The Unit  stage in CI/CD workflow for CSI application is Failed PFA logs.'
           attachment: Unit_test-log.txt
@@ -214,7 +214,7 @@ jobs:
       - name: Notify by email (Sonarqube Quality Gate status)
         uses: cinotify/github-action@main
         with:
-          to: 'sandesh.kandaswamy@ust.com'
+          to: 'stakeholder’s email id'
           subject: 'Sonarqube Quality Gate status passed'
           body: 'The Sonarqube Quality Gate status has been passed w.r.t code coverage, unit tests other scenarios, Please review the dashboard for more details.'
           
@@ -226,7 +226,7 @@ jobs:
       - name: Notify by email (Sonarqube Quality Gate status)
         uses: cinotify/github-action@main
         with:
-          to: 'sandesh.kandaswamy@ust.com'
+          to: 'stakeholder’s email id'
           subject: 'Sonarqube Quality Gate status failed'
           body: 'The Sonarqube Quality Gate status has been failed and does not met the passing % of code coverage,unit tests and other scenarios, Please review the dashboard for more details.'
           
@@ -359,7 +359,7 @@ jobs:
       - name: Notify by email (Build Success)
         uses: cinotify/github-action@main
         with:
-          to: 'sandesh.kandaswamy@ust.com'
+          to: 'stakeholder’s email id'
           subject: 'GitHub Actions Build Successful'
           body: 'The CI/CD build for CSI Application completed successfully.'
           attachment: build-log.txt
@@ -376,7 +376,7 @@ jobs:
       - name: Notify by email (Build Failure)
         uses: cinotify/github-action@main
         with:
-          to: 'sandesh.kandaswamy@ust.com'
+          to: 'stakeholder’s email id'
           subject: 'GitHub Actions Build Failed'
           body: 'The CI/CD build for CSI Application failed. Please check the build logs for details.'
           attachment: build-log.txt
@@ -441,7 +441,7 @@ jobs:
       - name: Notify by email (Test-Automation Success)
         uses: cinotify/github-action@main
         with:
-          to: 'sandesh.kandaswamy@ust.com'
+          to: 'stakeholder’s email id'
           subject: 'Passed Test-Automation Stage'
           body: 'The Test-Automation stage in CI/CD workflow for CSI application is Passed.'
           attachment: emailable-report.html
@@ -458,7 +458,7 @@ jobs:
       - name: Notify by email (Test-Automation Failure)
         uses: cinotify/github-action@main
         with:
-          to: 'sandesh.kandaswamy@ust.com'
+          to: 'stakeholder’s email id'
           subject: 'Test-Automation Stage Failed'
           body: 'The Test-Automation stage in CI/CD workflow for CSI application is Failed.'
           attachment: emailable-report.html
