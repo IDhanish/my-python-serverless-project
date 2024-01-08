@@ -601,7 +601,7 @@ jobs:
     # Enable extended globbing for advanced pattern matching
     shopt -s extglob
 
-    # Remove unwanted files (excluding placeholder-file-1 and placeholder-file-2)
+    # Remove unwanted files (excluding file-1 and file-2)
     rm -r !(file-1|file-2)
 
     # Print the remaining files after cleanup for reference
