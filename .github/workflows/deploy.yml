@@ -573,8 +573,8 @@ jobs:
   # Step to clone another repository
   - name: Clone the other repository
     run: |
-      # Replace 'username' with the GitHub username and 'repo' with the repository want to clone.
-      git clone git@github.com:savemart-itapps/offers-integration-tests.git -b csi-tests
+      # Replace 'username' with the GitHub username, 'repo' with the repository and branchname with the particular branch's name want to clone.
+      git clone git@github.com:username/repo.git -b branchname
 
 
 
