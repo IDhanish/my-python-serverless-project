@@ -590,3 +590,21 @@ jobs:
       distribution: 'adopt'
 
 
+- name: Deleting unwanted files from the deployment directory
+  run: |
+    # Print the current contents of the deployment directory for reference
+    ls -lrt $GITHUB_WORKSPACE
+
+    # Change to the deployment directory
+    cd $GITHUB_WORKSPACE
+
+    # Enable extended globbing for advanced pattern matching
+    shopt -s extglob
+
+    # Remove unwanted files (excluding placeholder-file-1 and placeholder-file-2)
+    rm -r !(file-1|file-2)
+
+    # Print the remaining files after cleanup for reference
+    ls -lrt $GITHUB_WORKSPACE
+
+
